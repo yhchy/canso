@@ -1,0 +1,31 @@
+<template>
+  <a-list item-layout="horizontal" :data-source="props.postList">
+    <template #renderItem="{ item }">
+      <a-list-item>
+        <a-list-item-meta :description="item.content">
+          <template #title>
+            <a href="https://www.antdv.com/">{{ item.title }}</a>
+          </template>
+          <template #avatar>
+            <a-avatar :src="baiyuekui" />
+          </template>
+        </a-list-item-meta>
+      </a-list-item>
+    </template>
+  </a-list>
+</template>
+
+<script setup lang="ts">
+import { withDefaults, defineProps } from "vue";
+import baiyuekui from "@/assets/baiyuekui.png";
+
+interface Prop {
+  postList: any[];
+}
+
+const props = withDefaults(defineProps<Prop>(), {
+  postList: () => [],
+});
+</script>
+
+<style scoped></style>
