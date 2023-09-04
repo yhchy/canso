@@ -2,19 +2,17 @@ package com.yhchy.canso.manager;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yhchy.canso.common.ErrorCode;
+import com.yhchy.canso.datasource.*;
 import com.yhchy.canso.exception.BusinessException;
 import com.yhchy.canso.exception.ThrowUtils;
 import com.yhchy.canso.model.dto.post.PostQueryRequest;
 import com.yhchy.canso.model.dto.search.SearchRequest;
-import com.yhchy.canso.model.entity.Picture;
-import com.yhchy.canso.model.vo.SearchVO;
-import com.yhchy.canso.service.PictureService;
-import com.yhchy.canso.service.PostService;
 import com.yhchy.canso.model.dto.user.UserQueryRequest;
+import com.yhchy.canso.model.entity.Picture;
 import com.yhchy.canso.model.enums.SearchTypeEnum;
 import com.yhchy.canso.model.vo.PostVO;
+import com.yhchy.canso.model.vo.SearchVO;
 import com.yhchy.canso.model.vo.UserVO;
-import com.yhchy.canso.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -34,12 +32,13 @@ import java.util.concurrent.CompletableFuture;
 @Slf4j
 public class SearchFacade {
     @Resource
-    private PictureService pictureService;
-
+    private PictureDataSource pictureDataSource;
     @Resource
-    private UserService userService;
+    private UserDataSource userDataSource;
     @Resource
-    private PostService postService;
+    private PostDataSource postDataSource;
+    @Resource
+    private DataSourceRegistry dataSourceRegistry;
 
     public SearchVO searchALl(@RequestBody SearchRequest searchRequest, HttpServletRequest request) {
         String searchType = searchRequest.getSearchType();
@@ -52,21 +51,16 @@ public class SearchFacade {
             CompletableFuture<Page<UserVO>> userCompletableFuture = CompletableFuture.supplyAsync(() -> {
                 UserQueryRequest userQueryRequest = new UserQueryRequest();
                 userQueryRequest.setUserName(searchText);
-                Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
-                return userVOPage;
+                return userDataSource.doSearch(searchText, current, pageSize);
             });
 
             CompletableFuture<Page<PostVO>> postCompletableFuture = CompletableFuture.supplyAsync(() -> {
                 PostQueryRequest postQueryRequest = new PostQueryRequest();
                 postQueryRequest.setTitle(searchText);
-                Page<PostVO> postVOPage = postService.listPostVOByPage(postQueryRequest, request);
-                return postVOPage;
+                return postDataSource.doSearch(searchText, current, pageSize);
             });
 
-            CompletableFuture<Page<Picture>> pictureCompletableFuture = CompletableFuture.supplyAsync(() -> {
-                Page<Picture> picturePage = pictureService.searchPicture(searchText, current, pageSize);
-                return picturePage;
-            });
+            CompletableFuture<Page<Picture>> pictureCompletableFuture = CompletableFuture.supplyAsync(() -> pictureDataSource.doSearch(searchText, current, pageSize));
 
             CompletableFuture.allOf(userCompletableFuture, pictureCompletableFuture, postCompletableFuture).join();
 
@@ -84,26 +78,11 @@ public class SearchFacade {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "查询异常");
             }
         } else {
+
             SearchVO searchVO = new SearchVO();
-            switch (searchTypeEnum) {
-                case USER:
-                    UserQueryRequest userQueryRequest = new UserQueryRequest();
-                    userQueryRequest.setUserName(searchText);
-                    Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
-                    searchVO.setUserList(userVOPage.getRecords());
-                    break;
-                case POST:
-                    PostQueryRequest postQueryRequest = new PostQueryRequest();
-                    postQueryRequest.setTitle(searchText);
-                    Page<PostVO> postVOPage = postService.listPostVOByPage(postQueryRequest, request);
-                    searchVO.setPostList(postVOPage.getRecords());
-                    break;
-                case PICTURE:
-                    Page<Picture> picturePage = pictureService.searchPicture(searchText, current, pageSize);
-                    searchVO.setPictureList(picturePage.getRecords());
-                    break;
-                default:
-            }
+            DataSource<?> dataSource = dataSourceRegistry.getDataSourceByType(searchType);
+            Page<?> page = dataSource.doSearch(searchText, current, pageSize);
+            searchVO.setDataList(page.getRecords());
             return searchVO;
         }
     }

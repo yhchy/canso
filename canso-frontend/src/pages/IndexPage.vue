@@ -99,11 +99,11 @@ const loadData = (params: any) => {
   };
   myAxios.post("/search/all", query).then((res: any) => {
     if (searchType === "post") {
-      postList.value = res.postList;
+      postList.value = res.dataList;
     } else if (searchType === "user") {
-      userList.value = res.userList;
+      userList.value = res.dataList;
     } else if (searchType === "picture") {
-      pictureList.value = res.pictureList;
+      pictureList.value = res.dataList;
     }
   });
 };

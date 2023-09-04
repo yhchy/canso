@@ -1,6 +1,7 @@
 package com.yhchy.canso.model.vo;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.yhchy.canso.model.entity.Picture;
 import lombok.Data;
 
@@ -19,6 +20,7 @@ public class SearchVO implements Serializable {
     private List<PostVO> postList;
     private List<Picture> pictureList;
 
+    private List<?> dataList;
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
 }

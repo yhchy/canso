@@ -1,6 +1,6 @@
 spring:
   application:
-    name: springboot-init
+    name: canso
   # 默认 dev 环境
   profiles:
     active: dev
