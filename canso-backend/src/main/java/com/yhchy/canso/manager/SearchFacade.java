@@ -78,7 +78,6 @@ public class SearchFacade {
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, "查询异常");
             }
         } else {
-
             SearchVO searchVO = new SearchVO();
             DataSource<?> dataSource = dataSourceRegistry.getDataSourceByType(searchType);
             Page<?> page = dataSource.doSearch(searchText, current, pageSize);
