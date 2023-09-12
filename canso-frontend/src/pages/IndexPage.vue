@@ -1,7 +1,7 @@
 <template>
   <div class="index-page">
     <a-input-search
-      v-model:value="searchParams.text"
+      v-model:value="searchText"
       placeholder="input search text"
       enter-button="Search"
       size="large"
@@ -53,6 +53,7 @@ import UserList from "@/components/UserList.vue";
 import MyDivider from "@/components/MyDivider.vue";
 import { useRoute, useRouter } from "vue-router";
 import myAxios from "@/plugins/myAxios";
+import { message } from "ant-design-vue";
 
 const postList = ref([]);
 const userList = ref([]);
@@ -61,24 +62,19 @@ const pictureList = ref([]);
 const router = useRouter();
 const route = useRoute();
 
-const activeKey = ref(route.params.category);
+const activeKey = route.params.category;
 
 const initSearchParams = {
+  searchType: activeKey,
   text: route.query.text,
   pageNum: 1,
   pageSize: 10,
 };
 
+const searchText = ref(route.query.text || "");
 const searchParams = ref(initSearchParams);
 
-watchEffect(() => {
-  searchParams.value = {
-    ...initSearchParams,
-    text: route.query.text,
-  } as any;
-});
-
-const loadData = (params: any) => {
+const loadAllData = (params: any) => {
   const query = {
     ...params,
     searchText: params.text,
@@ -87,6 +83,28 @@ const loadData = (params: any) => {
     postList.value = res.postList;
     userList.value = res.userList;
     pictureList.value = res.pictureList;
+  });
+};
+
+const loadData = (params: any) => {
+  const { searchType } = params;
+  console.log("searchType:" + searchType);
+  if (!searchType) {
+    message.error("类别为空");
+    return;
+  }
+  const query = {
+    ...params,
+    searchText: params.text,
+  };
+  myAxios.post("/search/all", query).then((res: any) => {
+    if (searchType === "post") {
+      postList.value = res.dataList;
+    } else if (searchType === "user") {
+      userList.value = res.dataList;
+    } else if (searchType === "picture") {
+      pictureList.value = res.dataList;
+    }
   });
 };
 
@@ -116,14 +134,13 @@ const loadDataOld = (params: any) => {
   });
 };
 
-loadData(initSearchParams);
-
 const onSearch = (value: string) => {
-  console.log(value);
   router.push({
-    query: searchParams.value,
+    query: {
+      ...searchParams.value,
+      text: value,
+    },
   });
-  loadData(searchParams.value);
 };
 
 const onTabChange = (key: string) => {
@@ -132,4 +149,13 @@ const onTabChange = (key: string) => {
     query: searchParams.value,
   });
 };
+
+watchEffect(() => {
+  searchParams.value = {
+    ...initSearchParams,
+    text: route.query.text,
+    searchType: route.params.category,
+  } as any;
+  loadData(searchParams.value);
+});
 </script>
